@@ -1,4 +1,104 @@
-# Regras do setor financeiro
-# Exemplo de regra Snort para detecção de tráfego suspeito no setor financeiro
-alert tcp any any -> any 443 (msg:"Possível acesso não autorizado a servidor financeiro"; flow:established,to_server; content:"/login"; nocase; sid:10001; rev:1;)
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="Financeiro">
+  
+  <!-- 1️⃣ Tentativas consecutivas de login falho -->
+  <rule id="FIN-001" level="7">
+    <description>Tentativas de login falhas consecutivas detectadas</description>
+    <condition>
+      event.action == "failed-login" AND count(event.src_ip) &gt;= 5 AND within(60)
+    </condition>
+    <action>alert</action>
+    <message>Possível ataque de força bruta em portal financeiro</message>
+  </rule>
 
+  <!-- 2️⃣ Acesso a diretórios administrativos -->
+  <rule id="FIN-002" level="6">
+    <description>Acesso ao diretório administrativo detectado</description>
+    <condition>
+      event.http.uri contains "/admin" AND event.http.status == 200
+    </condition>
+    <action>log</action>
+    <message>Acesso administrativo detectado em aplicação financeira</message>
+  </rule>
+
+  <!-- 3️⃣ Exfiltração de dados (volume de tráfego elevado) -->
+  <rule id="FIN-003" level="9">
+    <description>Volume de tráfego de saída anormal detectado</description>
+    <condition>
+      network.bytes_out &gt; 10000000 AND NOT event.user in ["backup","replicacao"]
+    </condition>
+    <action>alert</action>
+    <message>Possível exfiltração de dados detectada</message>
+  </rule>
+
+  <!-- 4️⃣ Download de arquivos executáveis -->
+  <rule id="FIN-004" level="6">
+    <description>Download de arquivo executável via HTTP</description>
+    <condition>
+      event.http.method == "GET" AND event.url endswith ".exe"
+    </condition>
+    <action>alert</action>
+    <message>Download de executável identificado - possível phishing</message>
+  </rule>
+
+  <!-- 5️⃣ Conexão SSH para IP externo -->
+  <rule id="FIN-005" level="9">
+    <description>Conexão SSH externa detectada</description>
+    <condition>
+      network.dst_port == 22 AND NOT network.dst_ip in CIDR("10.0.0.0/8","172.16.0.0/12","192.168.0.0/16")
+    </condition>
+    <action>block</action>
+    <message>Conexão SSH suspeita com IP externo detectada</message>
+  </rule>
+
+  <!-- 6️⃣ Acesso a arquivos com dados sensíveis -->
+  <rule id="FIN-006" level="10">
+    <description>Acesso a arquivos de dados de clientes</description>
+    <condition>
+      event.file.name matches /card|cpf|dados_clientes/i
+    </condition>
+    <action>alert</action>
+    <message>Acesso a arquivos contendo dados sensíveis detectado</message>
+  </rule>
+
+  <!-- 7️⃣ Consultas DNS para domínios maliciosos -->
+  <rule id="FIN-007" level="10">
+    <description>Consulta DNS para domínio classificado como malicioso</description>
+    <condition>
+      event.dns.query in threatintel.domains
+    </condition>
+    <action>block</action>
+    <message>Conexão DNS suspeita identificada</message>
+  </rule>
+
+  <!-- 8️⃣ Criação de usuário administrativo fora do horário comercial -->
+  <rule id="FIN-008" level="7">
+    <description>Criação de usuário administrativo fora do horário normal</description>
+    <condition>
+      event.action == "user-create" AND event.user.role == "admin" AND NOT event.timestamp between "08:00".."18:00"
+    </condition>
+    <action>log</action>
+    <message>Usuário administrativo criado fora do horário comercial</message>
+  </rule>
+
+  <!-- 9️⃣ Alteração não autorizada de regras de firewall -->
+  <rule id="FIN-009" level="8">
+    <description>Modificação não autorizada em política de firewall</description>
+    <condition>
+      event.source == "firewall" AND event.action == "rule-change" AND NOT event.user in ["admin-fw","soc"]
+    </condition>
+    <action>alert</action>
+    <message>Mudança de regra de firewall detectada sem autorização</message>
+  </rule>
+
+  <!-- 🔟 Sessões RDP iniciadas por IP externo -->
+  <rule id="FIN-010" level="9">
+    <description>Sessão RDP iniciada fora da rede corporativa</description>
+    <condition>
+      event.protocol == "RDP" AND NOT network.src_ip in CIDR("10.0.0.0/8","172.16.0.0/12","192.168.0.0/16")
+    </condition>
+    <action>alert</action>
+    <message>Sessão RDP externa detectada - possível invasão</message>
+  </rule>
+
+</ruleset>
