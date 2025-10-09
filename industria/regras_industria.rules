@@ -1,1 +1,54 @@
-# Regras do setor industrial
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="Industria">
+
+  <!-- 1️⃣ Alteração de parâmetros em sistemas SCADA -->
+  <rule id="IND-001" level="10">
+    <description>Modificação não autorizada em controlador SCADA</description>
+    <condition>
+      event.device.type == "PLC" AND event.action == "config-change" AND NOT event.user in ["engenheiro_controle"]
+    </condition>
+    <action>block</action>
+    <message>Alteração não autorizada em controlador industrial</message>
+  </rule>
+
+  <!-- 2️⃣ Conexão remota em rede OT (Operational Technology) -->
+  <rule id="IND-002" level="9">
+    <description>Conexão remota externa em rede industrial</description>
+    <condition>
+      event.protocol == "RDP" AND network.dst_ip in "10.10.0.0/16"
+    </condition>
+    <action>alert</action>
+    <message>Acesso remoto à rede OT detectado</message>
+  </rule>
+
+  <!-- 3️⃣ Execução de software não homologado -->
+  <rule id="IND-003" level="8">
+    <description>Execução de aplicativo não autorizado em estação industrial</description>
+    <condition>
+      event.process.name not in approved_software
+    </condition>
+    <action>alert</action>
+    <message>Software não homologado executado em ambiente industrial</message>
+  </rule>
+
+  <!-- 4️⃣ Falha repetida de sensores IoT -->
+  <rule id="IND-004" level="7">
+    <description>Falhas consecutivas em sensores IoT detectadas</description>
+    <condition>
+      count(event.device.status == "fail") &gt;= 3 within(120)
+    </condition>
+    <action>log</action>
+    <message>Falhas repetidas em sensores IoT industriais</message>
+  </rule>
+
+  <!-- 5️⃣ Transferência de firmware suspeita -->
+  <rule id="IND-005" level="9">
+    <description>Atualização de firmware não autorizada</description>
+    <condition>
+      event.file.name endswith ".bin" AND event.action == "upload" AND NOT event.user in ["suporte_ti"]
+    </condition>
+    <action>alert</action>
+    <message>Upload de firmware não autorizado detectado</message>
+  </rule>
+
+</ruleset>
