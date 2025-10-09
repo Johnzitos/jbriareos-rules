@@ -1,1 +1,54 @@
-# Regras do setor de saúde
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="Saude">
+
+  <!-- 1️⃣ Acesso a registros médicos fora do horário -->
+  <rule id="SAU-001" level="8">
+    <description>Acesso a prontuário fora do expediente</description>
+    <condition>
+      event.file.path contains "/prontuarios/" AND NOT event.timestamp between "07:00".."19:00"
+    </condition>
+    <action>alert</action>
+    <message>Acesso a dados médicos fora do horário permitido</message>
+  </rule>
+
+  <!-- 2️⃣ Cópia de dados sensíveis em massa -->
+  <rule id="SAU-002" level="9">
+    <description>Cópia de múltiplos registros de pacientes detectada</description>
+    <condition>
+      count(event.file.access) &gt; 100 within(60) AND event.user.role != "medico"
+    </condition>
+    <action>alert</action>
+    <message>Possível exfiltração de dados de pacientes</message>
+  </rule>
+
+  <!-- 3️⃣ Acesso remoto não autorizado -->
+  <rule id="SAU-003" level="10">
+    <description>Conexão remota suspeita em sistema hospitalar</description>
+    <condition>
+      event.protocol == "RDP" AND NOT network.src_ip in CIDR("10.0.0.0/8","172.16.0.0/12")
+    </condition>
+    <action>block</action>
+    <message>Acesso remoto externo bloqueado</message>
+  </rule>
+
+  <!-- 4️⃣ Uso de credenciais de administrador fora da rede hospitalar -->
+  <rule id="SAU-004" level="9">
+    <description>Uso de credenciais administrativas em rede externa</description>
+    <condition>
+      event.user.role == "admin" AND NOT network.src_ip in CIDR("10.0.0.0/8")
+    </condition>
+    <action>alert</action>
+    <message>Uso indevido de conta administrativa fora da rede interna</message>
+  </rule>
+
+  <!-- 5️⃣ Modificação de arquivos de configuração do sistema hospitalar -->
+  <rule id="SAU-005" level="8">
+    <description>Alteração em arquivos críticos detectada</description>
+    <condition>
+      event.file.path matches /(config|sistema_hospitalar|backup)/i AND event.action == "modify"
+    </condition>
+    <action>alert</action>
+    <message>Alteração indevida em arquivos críticos de sistema hospitalar</message>
+  </rule>
+
+</ruleset>
