@@ -1,1 +1,55 @@
-# Regras do setor governamental
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="Governo">
+
+  <!-- 1️⃣ Acesso a sistemas sigilosos fora da rede interna -->
+  <rule id="GOV-001" level="10">
+    <description>Acesso remoto não autorizado a sistema governamental</description>
+    <condition>
+      event.protocol == "RDP" AND NOT network.src_ip in CIDR("10.0.0.0/8","172.16.0.0/12")
+    </condition>
+    <action>block</action>
+    <message>Acesso remoto a sistema sigiloso bloqueado</message>
+  </rule>
+
+  <!-- 2️⃣ Tentativa de cópia de arquivos confidenciais -->
+  <rule id="GOV-002" level="9">
+    <description>Cópia de documentos classificados detectada</description>
+    <condition>
+      event.file.path contains "/confidencial/" AND event.action == "copy"
+    </condition>
+    <action>alert</action>
+    <message>Cópia de arquivo sigiloso identificada</message>
+  </rule>
+
+  <!-- 3️⃣ Alteração de permissões em documentos oficiais -->
+  <rule id="GOV-003" level="8">
+    <description>Alteração indevida de permissões em documento oficial</description>
+    <condition>
+      event.file.path matches /(oficio|decreto|lei)/i AND event.action == "chmod"
+    </condition>
+    <action>alert</action>
+    <message>Alteração de permissões em arquivo oficial detectada</message>
+  </rule>
+
+  <!-- 4️⃣ Exclusão de logs de auditoria -->
+  <rule id="GOV-004" level="10">
+    <description>Tentativa de exclusão de logs de auditoria</description>
+    <condition>
+      event.file.path contains "/logs/auditoria/" AND event.action == "delete"
+    </condition>
+    <action>block</action>
+    <message>Exclusão de logs de auditoria bloqueada</message>
+  </rule>
+
+  <!-- 5️⃣ Upload de arquivos suspeitos para e-mails governamentais -->
+  <rule id="GOV-005" level="8">
+    <description>Envio de anexo suspeito em e-mail institucional</description>
+    <condition>
+      event.email.attachment.extension in [".exe",".js",".scr",".bat"]
+    </condition>
+    <action>alert</action>
+    <message>Anexo malicioso detectado em e-mail institucional</message>
+  </rule>
+
+</ruleset>
+
