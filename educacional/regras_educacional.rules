@@ -1,3 +1,55 @@
-# Regras do setor educacional
-# Exemplo de regra de monitoramento para rede acadêmica
-alert tcp any any -> any 80 (msg:"Download suspeito em ambiente educacional"; content:".exe"; nocase; sid:20001; rev:1;)
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="Educacional">
+
+  <!-- 1️⃣ Acesso a conteúdo inadequado em rede institucional -->
+  <rule id="EDU-001" level="6">
+    <description>Acesso a conteúdo não educativo detectado</description>
+    <condition>
+      event.http.url matches /(facebook|instagram|tiktok|torrent)/i
+    </condition>
+    <action>log</action>
+    <message>Acesso a site não permitido em rede educacional</message>
+  </rule>
+
+  <!-- 2️⃣ Instalação de software não autorizado -->
+  <rule id="EDU-002" level="8">
+    <description>Instalação de aplicativo não autorizado em estação de aluno</description>
+    <condition>
+      event.file.extension == ".exe" AND event.action == "install" AND NOT event.user in ["admin-ti"]
+    </condition>
+    <action>alert</action>
+    <message>Instalação de software não autorizado detectada</message>
+  </rule>
+
+  <!-- 3️⃣ Conexão de dispositivos USB desconhecidos -->
+  <rule id="EDU-003" level="7">
+    <description>Dispositivo USB não autorizado conectado</description>
+    <condition>
+      event.device.type == "usb" AND NOT event.device.id in allowed_devices
+    </condition>
+    <action>alert</action>
+    <message>Dispositivo USB não permitido conectado em estação</message>
+  </rule>
+
+  <!-- 4️⃣ Transferência de grandes volumes de dados por alunos -->
+  <rule id="EDU-004" level="8">
+    <description>Possível exfiltração de dados ou download massivo</description>
+    <condition>
+      network.bytes_out &gt; 50000000 AND event.user.role == "aluno"
+    </condition>
+    <action>alert</action>
+    <message>Tráfego anormal de saída detectado em conta de aluno</message>
+  </rule>
+
+  <!-- 5️⃣ Tentativas de invasão em servidores acadêmicos -->
+  <rule id="EDU-005" level="9">
+    <description>Tentativas de login forçado em servidor educacional</description>
+    <condition>
+      event.action == "failed-login" AND count(event.src_ip) &gt;= 10 AND within(60)
+    </condition>
+    <action>alert</action>
+    <message>Possível ataque de força bruta a servidor educacional</message>
+  </rule>
+
+</ruleset>
+
